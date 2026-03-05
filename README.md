@@ -23,7 +23,7 @@ COSMIC Calculator includes five distinct modes to handle workflows:
 * **Native Theming:** Automatically adapts to your active COSMIC theme (accent colors, component backgrounds, and border radii).
 * **Fully Keyboard Navigable:** Designed to be used without taking your hands off the keyboard.
 
-## ⌨️ Keyboard Shortcuts
+## Keyboard Shortcuts
 
 | Shortcut | Action |
 | :--- | :--- |
