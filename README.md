@@ -2,9 +2,9 @@
 
 A feature-rich, multi-modal calculator designed natively for the [System76 COSMIC](https://github.com/pop-os/cosmic-epoch) Desktop Environment. Built with Rust and `cosmic-iced`, it seamlessly integrates with COSMIC's theming, rounded corners, and UI components while offering powerful tools for developers, scientists, and everyday users.
 
-## ✨ Features
+## Features
 
-COSMIC Calculator includes five distinct modes to handle any workflow:
+COSMIC Calculator includes five distinct modes to handle workflows:
 
 * **Standard Mode:** * Clean interface for quick, everyday arithmetic.
     * Built-in quick conversions for volume (pt/L, gal/L), distance (mi/km), and weight (lb/kg).
@@ -38,11 +38,11 @@ COSMIC Calculator includes five distinct modes to handle any workflow:
 | `Backspace`| Delete last character (`DEL`) |
 | `a` - `f` | Hexadecimal entry (in Programmer Mode) |
 
-## 🚀 Installation
+## Installation
 
 ### Building from Source
 
-Ensure you have [Rust and Cargo](https://rustup.rs/) installed, as well as the necessary COSMIC/iced dependencies for your distribution.
+Ensure you have [Rust and Cargo](https://rustup.rs/) installed, you may also need libcosmic if you don't already have this for any reason.
 
 ```bash
 git clone [https://github.com/Kenyon-J/cosmic-calculator.git](https://github.com/Kenyon-J/cosmic-calculator.git)
