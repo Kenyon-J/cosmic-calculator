@@ -1,0 +1,13 @@
+[package]
+name = "arch_calculator"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+libcosmic = { git = "https://github.com/pop-os/libcosmic", branch = "master", features = ["wayland", "winit"] }
+evalexpr = "11.3"
+tokio = { version = "1.0", features = ["time"] }
+
+[patch.crates-io]
+web-sys = { git = "https://github.com/rustwasm/wasm-bindgen" }
+wasm-bindgen = { git = "https://github.com/rustwasm/wasm-bindgen" }
