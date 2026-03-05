@@ -1,0 +1,32 @@
+app-id: com.cosmic.calculator
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+command: cosmic-calculator
+
+# (hopefully) Gives the build environment access to the Rust compiler
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin
+
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+
+# The specific system permissions to run natively on COSMIC
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+
+modules:
+  - name: cosmic-calculator
+    buildsystem: simple
+    build-commands:
+      - cargo --offline build --release
+      - install -Dm755 target/release/cosmic-calculator /app/bin/cosmic-calculator
+    sources:
+      - type: git
+        url: https://github.com/Kenyon-J/cosmic-calculator.git
+        branch: main
+      - type: file
+        path: cargo-sources.json
