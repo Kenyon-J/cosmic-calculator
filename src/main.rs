@@ -94,7 +94,7 @@ impl Application for CalcApp {
     type Executor = cosmic::executor::Default;
     type Message  = Message;
     type Flags    = ();
-    const APP_ID: &'static str = "com.arch.calculator";
+    const APP_ID: &'static str = "com.cosmic.calculator";
     fn core(&self)         -> &Core      { &self.core }
     fn core_mut(&mut self) -> &mut Core  { &mut self.core }
 
