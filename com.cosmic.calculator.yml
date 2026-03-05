@@ -11,7 +11,7 @@ build-options:
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.rust-stable
 
-# The specific system permissions to run natively on COSMIC
+# system permissions to run natively on COSMIC
 finish-args:
   - --share=ipc
   - --socket=wayland
