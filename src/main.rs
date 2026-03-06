@@ -86,6 +86,7 @@ struct CalcApp {
     mode: CalcMode,
     display: String,
     prev_value: f64,
+    prev_int: i64, // exact integer lhs for programmer mode ops
     current_op: Option<char>,
     new_input: bool,
     history: Vec<String>,
@@ -113,6 +114,7 @@ enum Message {
     InsertConstant(f64),
     StatAdd,
     StatClear,
+    ClearOp,
 }
 
 impl Application for CalcApp {
@@ -134,6 +136,7 @@ impl Application for CalcApp {
                 mode: CalcMode::Standard,
                 display: "0".to_string(),
                 prev_value: 0.0,
+            prev_int: 0,
                 current_op: None,
                 new_input: true,
                 history: Vec::new(),
@@ -195,8 +198,13 @@ impl Application for CalcApp {
                 self.stat_values.clear();
                 self.reset_all();
             }
+            Message::ClearOp => {
+                self.current_op = None;
+                self.prev_int = 0;
+                self.new_input = true;
+            }
             Message::InsertConstant(val) => {
-                let formatted = Self::format_result(val);
+                let formatted = Self::format_for_expr(val);
                 if self.mode == CalcMode::Scientific && !self.new_input && self.display != "0" {
                     // Append to expression so user can type e.g. 2*pi
                     self.display.push_str(&formatted);
@@ -1285,10 +1293,34 @@ impl CalcApp {
         let font_size: u16 = if self.display.len() > 10 { 24 } else { 36 };
         let prog_display = self.display.clone();
 
+        // Show pending op above the value, e.g. "6 AND" while waiting for second operand
+        let pending_op = if self.new_input {
+            match self.current_op {
+                Some('&') => format!("{} AND", Self::format_in_base(self.prev_int, base)),
+                Some('|') => format!("{} OR",  Self::format_in_base(self.prev_int, base)),
+                Some('^') => format!("{} XOR", Self::format_in_base(self.prev_int, base)),
+                Some('<') => format!("{} <<",  Self::format_in_base(self.prev_int, base)),
+                Some('>') => format!("{} >>",  Self::format_in_base(self.prev_int, base)),
+                Some('+') => format!("{} +",   Self::format_in_base(self.prev_int, base)),
+                Some('-') => format!("{} -",   Self::format_in_base(self.prev_int, base)),
+                Some('*') => format!("{} x",   Self::format_in_base(self.prev_int, base)),
+                Some('/') => format!("{} div", Self::format_in_base(self.prev_int, base)),
+                _ => String::new(),
+            }
+        } else {
+            String::new()
+        };
+
         let display_area = button::custom(
             container(
                 column()
                     .spacing(2)
+                    .push(
+                        text(pending_op)
+                            .size(11)
+                            .shaping(Shaping::Advanced)
+                            .align_x(Alignment::End),
+                    )
                     .push(
                         text(prog_display)
                             .size(font_size)
@@ -1407,7 +1439,19 @@ impl CalcApp {
             }
         };
 
+        let active_op_char = self.current_op;
         let bw_btn = |label: &'static str| -> Element<'_, Message> {
+            // Determine if this button represents the currently pending op
+            let is_active = self.new_input && match (label, active_op_char) {
+                ("AND", Some('&')) | ("OR",  Some('|')) | ("XOR", Some('^')) |
+                ("<<",  Some('<')) | (">>",  Some('>')) |
+                ("+",   Some('+')) | ("-",   Some('-')) |
+                ("x",   Some('*')) | ("div", Some('/')) => true,
+                _ => false,
+            };
+            let (bg, fg) = if is_active { (pill_acc_bg, pill_acc_fg) } else { (des_bg, std_fg) };
+            // Clicking an already-active op cancels it; otherwise sets it
+            let msg = if is_active { Message::ClearOp } else { Message::Input(label) };
             button::custom(
                 container(
                     text(label)
@@ -1421,8 +1465,8 @@ impl CalcApp {
                 .align_y(Alignment::Center)
                 .style(move |_: &cosmic::Theme| {
                     cosmic::iced::widget::container::Style {
-                        background: Some(cosmic::iced::Background::Color(des_bg)),
-                        text_color: Some(std_fg),
+                        background: Some(cosmic::iced::Background::Color(bg)),
+                        text_color: Some(fg),
                         border: cosmic::iced::Border {
                             radius: rad,
                             ..Default::default()
@@ -1434,62 +1478,53 @@ impl CalcApp {
             .padding(0)
             .width(Length::Fill)
             .height(Length::Fill)
-            .on_press(Message::Input(label))
+            .on_press(msg)
             .into()
         };
 
         let maybe =
             |l: &'static str, ok: bool| -> Element<'_, Message> { if ok { d(l) } else { dim(l) } };
 
-        let hex_r1 = row()
-            .spacing(6)
-            .height(Length::Fill)
-            .push(hex_digit("A"))
-            .push(hex_digit("B"))
-            .push(hex_digit("C"))
-            .push(hex_digit("D"));
-        let hex_r2 = row()
-            .spacing(6)
-            .height(Length::Fill)
-            .push(hex_digit("E"))
-            .push(hex_digit("F"))
-            .push(bw_btn("<<"))
-            .push(bw_btn(">>"));
-        let r1 = row()
-            .spacing(6)
-            .height(Length::Fill)
-            .push(a("CE"))
-            .push(a("C"))
-            .push(a("DEL"))
-            .push(bw_btn("NOT"));
-        let r2 = row()
-            .spacing(6)
-            .height(Length::Fill)
-            .push(maybe("7", oct_ok))
-            .push(maybe("8", dec_ok))
-            .push(maybe("9", dec_ok))
-            .push(bw_btn("AND"));
-        let r3 = row()
-            .spacing(6)
-            .height(Length::Fill)
-            .push(d("4"))
-            .push(d("5"))
-            .push(d("6"))
-            .push(bw_btn("OR"));
-        let r4 = row()
-            .spacing(6)
-            .height(Length::Fill)
-            .push(d("1"))
-            .push(d("2"))
-            .push(d("3"))
-            .push(bw_btn("XOR"));
-        let r5 = row()
-            .spacing(6)
-            .height(Length::Fill)
-            .push(o("div"))
-            .push(d("0"))
-            .push(o("x"))
-            .push(o("="));
+        // 6-row grid. Right column is always bitwise ops.
+        // In HEX mode, left 3 cols of rows 1-2 show A-F (dimmed otherwise).
+        // << / >> occupy r1/r2 right slot when hex, pushed down otherwise.
+        let r1 = row().spacing(6).height(Length::Fill)
+            .push(hex_digit("A")).push(hex_digit("B")).push(hex_digit("C"))
+            .push(if hex_ok { bw_btn("<<") } else { bw_btn("NOT") });
+        let r2 = row().spacing(6).height(Length::Fill)
+            .push(hex_digit("D")).push(hex_digit("E")).push(hex_digit("F"))
+            .push(if hex_ok { bw_btn(">>") } else { bw_btn("AND") });
+        let r3 = row().spacing(6).height(Length::Fill)
+            .push(maybe("7", oct_ok)).push(maybe("8", dec_ok)).push(maybe("9", dec_ok))
+            .push(if hex_ok { bw_btn("AND") } else { bw_btn("OR") });
+        let r4 = row().spacing(6).height(Length::Fill)
+            .push(d("4")).push(d("5")).push(d("6"))
+            .push(if hex_ok { bw_btn("OR") } else { bw_btn("XOR") });
+        let r5 = row().spacing(6).height(Length::Fill)
+            .push(d("1")).push(d("2")).push(d("3"))
+            .push(if hex_ok { bw_btn("XOR") } else { bw_btn("<<") });
+        let clr_op_btn: Element<'_, Message> = {
+            let has_op = self.current_op.is_some() && self.new_input;
+            let (bg, fg) = if has_op { (pill_acc_bg, pill_acc_fg) } else { (des_bg, std_fg) };
+            let btn = button::custom(
+                container(text("CLR OP").size(11).shaping(Shaping::Advanced).align_x(Alignment::Center))
+                    .width(Length::Fill).height(Length::Fill)
+                    .align_x(Alignment::Center).align_y(Alignment::Center)
+                    .style(move |_: &cosmic::Theme| cosmic::iced::widget::container::Style {
+                        background: Some(cosmic::iced::Background::Color(bg)),
+                        text_color: Some(fg),
+                        border: cosmic::iced::Border { radius: rad, ..Default::default() },
+                        ..Default::default()
+                    }),
+            )
+            .padding(0).width(Length::Fill).height(Length::Fill);
+            if has_op { btn.on_press(Message::ClearOp).into() } else { btn.into() }
+        };
+        let r6 = row().spacing(6).height(Length::Fill)
+            .push(a("CE")).push(d("0")).push(a("DEL"))
+            .push(if hex_ok { bw_btn(">>") } else { clr_op_btn });
+        let r7 = row().spacing(6).height(Length::Fill)
+            .push(o("div")).push(d("+/-")).push(o("x")).push(o("="));
 
         column()
             .spacing(6)
@@ -1501,13 +1536,7 @@ impl CalcApp {
                 column()
                     .spacing(6)
                     .height(Length::Fill)
-                    .push(hex_r1)
-                    .push(hex_r2)
-                    .push(r1)
-                    .push(r2)
-                    .push(r3)
-                    .push(r4)
-                    .push(r5),
+                    .push(r1).push(r2).push(r3).push(r4).push(r5).push(r6).push(r7),
             )
             .into()
     }
@@ -1888,6 +1917,25 @@ impl CalcApp {
                 .to_string()
         }
     }
+
+    /// Format for insertion into a scientific expression — full precision,
+    /// scientific notation for extreme values so evalexpr can parse them.
+    fn format_for_expr(val: f64) -> String {
+        if val.is_nan() || val.is_infinite() { return "0".to_string(); }
+        let abs = val.abs();
+        if abs == 0.0 {
+            "0".to_string()
+        } else if abs >= 1e15 || abs < 1e-4 {
+            format!("{:e}", val)   // e.g. 6.626e-34, 6.022e23
+        } else if val.fract() == 0.0 {
+            format!("{}", val as i64)
+        } else {
+            format!("{:.15}", val)
+                .trim_end_matches('0')
+                .trim_end_matches('.')
+                .to_string()
+        }
+    }
     fn format_in_base(n: i64, base: Base) -> String {
         match base {
             Base::Hex => format!("{:X}", n),
@@ -2092,7 +2140,7 @@ impl CalcApp {
                     o => o.chars().next().unwrap_or('+'),
                 };
                 if let Ok(n) = i64::from_str_radix(&self.display, base.radix()) {
-                    self.prev_value = n as f64;
+                    self.prev_int = n;
                 }
                 self.current_op = Some(op);
                 self.new_input = true;
@@ -2107,7 +2155,7 @@ impl CalcApp {
             }
             "AND" | "OR" | "XOR" | "<<" | ">>" => {
                 if let Ok(n) = i64::from_str_radix(&self.display, base.radix()) {
-                    self.prev_value = n as f64;
+                    self.prev_int = n;
                 }
                 self.current_op = Some(match input {
                     "AND" => '&',
@@ -2133,7 +2181,7 @@ impl CalcApp {
                     self.current_op,
                     i64::from_str_radix(&self.display, base.radix()),
                 ) {
-                    let lhs = self.prev_value as i64;
+                    let lhs = self.prev_int;
                     let result = match op {
                         '+' => lhs.wrapping_add(rhs),
                         '-' => lhs.wrapping_sub(rhs),
