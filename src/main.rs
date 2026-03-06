@@ -1925,7 +1925,7 @@ impl CalcApp {
         let abs = val.abs();
         if abs == 0.0 {
             "0".to_string()
-        } else if abs >= 1e15 || abs < 1e-4 {
+        } else if !(1e-4..1e15).contains(&abs) {
             format!("{:e}", val)   // e.g. 6.626e-34, 6.022e23
         } else if val.fract() == 0.0 {
             format!("{}", val as i64)
