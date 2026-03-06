@@ -227,8 +227,7 @@ impl Application for CalcApp {
                     modifiers,
                     ..
                 } = event
-                {
-                    if modifiers.control() {
+                    && modifiers.control() {
                         let new_mode = match c.as_str() {
                             "1" => Some(CalcMode::Standard),
                             "2" => Some(CalcMode::Scientific),
@@ -247,7 +246,6 @@ impl Application for CalcApp {
                             return Task::none();
                         }
                     }
-                }
 
                 let mapped: Option<&'static str> = match event {
                     KeyEvent::KeyPressed {
@@ -777,7 +775,7 @@ impl Application for CalcApp {
                             row()
                                 .spacing(6)
                                 .width(Length::Fill)
-                                .push(const_btn("phi=1.61803", 1.6180339887498948))
+                                .push(const_btn("phi=1.61803", 1.618_033_988_749_895))
                                 .push(const_btn("sqrt2=1.414", std::f64::consts::SQRT_2)),
                         )
                         .push(
@@ -898,7 +896,7 @@ impl Application for CalcApp {
                 sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
                 let median = if n == 0 {
                     0.0
-                } else if n % 2 == 0 {
+                } else if n.is_multiple_of(2) {
                     (sorted[n / 2 - 1] + sorted[n / 2]) / 2.0
                 } else {
                     sorted[n / 2]
@@ -2224,11 +2222,10 @@ impl CalcApp {
                 self.rpn_stack.pop();
             }
             "+" | "-" | "x" | "div" => {
-                if !self.new_input {
-                    if let Ok(v) = self.display.parse::<f64>() {
+                if !self.new_input
+                    && let Ok(v) = self.display.parse::<f64>() {
                         self.rpn_stack.push(v);
                     }
-                }
                 if self.rpn_stack.len() >= 2 {
                     let b = self.rpn_stack.pop().unwrap();
                     let a = self.rpn_stack.pop().unwrap();

@@ -190,15 +190,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "arch_calculator"
-version = "0.1.0"
-dependencies = [
- "evalexpr",
- "libcosmic",
- "tokio",
-]
-
-[[package]]
 name = "arrayref"
 version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -949,6 +940,15 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.18",
+]
+
+[[package]]
+name = "cosmic_calculator"
+version = "0.1.0"
+dependencies = [
+ "evalexpr",
+ "libcosmic",
+ "tokio",
 ]
 
 [[package]]
