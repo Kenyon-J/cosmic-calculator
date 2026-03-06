@@ -1066,6 +1066,7 @@ impl Application for CalcApp {
 // ── View helpers ──────────────────────────────────────────────────────────────
 
 impl CalcApp {
+    #[allow(clippy::too_many_arguments)]
     fn view_history(
         &self,
         pill_acc_bg: cosmic::iced::Color,
@@ -1167,6 +1168,7 @@ impl CalcApp {
             .into()
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn view_standard_sci<'a: 'b, 'b>(
         &'b self,
         disp_bg: cosmic::iced::Color,
