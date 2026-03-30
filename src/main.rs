@@ -901,7 +901,7 @@ impl Application for CalcApp {
                     .fold(f64::NEG_INFINITY, f64::max);
                 let range = if n > 0 { max - min } else { 0.0 };
                 let mut sorted = self.stat_values.clone();
-                sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
+                sorted.sort_by(|a, b| a.total_cmp(b));
                 let median = if n == 0 {
                     0.0
                 } else if n.is_multiple_of(2) {
