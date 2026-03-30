@@ -2344,3 +2344,20 @@ impl CalcApp {
         }
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_apply_op() {
+        assert_eq!(CalcApp::apply_op('+', 2.0, 3.0), 5.0);
+        assert_eq!(CalcApp::apply_op('-', 5.0, 2.0), 3.0);
+        assert_eq!(CalcApp::apply_op('*', 4.0, 3.0), 12.0);
+        assert_eq!(CalcApp::apply_op('/', 10.0, 2.0), 5.0);
+        // Test division by zero
+        assert!(CalcApp::apply_op('/', 10.0, 0.0).is_infinite());
+        assert!(CalcApp::apply_op('/', 10.0, -0.0).is_infinite());
+        // Test default case
+        assert_eq!(CalcApp::apply_op('?', 1.0, 2.0), 2.0);
+    }
+}
