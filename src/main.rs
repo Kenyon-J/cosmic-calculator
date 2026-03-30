@@ -81,6 +81,148 @@ impl MenuAction {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+struct StyleContext {
+    rad: cosmic::iced::border::Radius,
+    rad_m: cosmic::iced::border::Radius,
+    pill_acc_bg: cosmic::iced::Color,
+    pill_acc_fg: cosmic::iced::Color,
+    pill_std_bg: cosmic::iced::Color,
+    pill_std_fg: cosmic::iced::Color,
+    std_bg: cosmic::iced::Color,
+    std_fg: cosmic::iced::Color,
+    sug_bg: cosmic::iced::Color,
+    sug_fg: cosmic::iced::Color,
+    des_bg: cosmic::iced::Color,
+    des_fg: cosmic::iced::Color,
+    hist_fg: cosmic::iced::Color,
+    hist_dim: cosmic::iced::Color,
+    disp_bg: cosmic::iced::Color,
+    disp_fg: cosmic::iced::Color,
+    border_clr: cosmic::iced::Color,
+    acc_dim_bg: cosmic::iced::Color,
+}
+
+impl StyleContext {
+    fn from_theme(theme: &cosmic::Theme) -> Self {
+        let ct = theme.cosmic();
+        let rad: cosmic::iced::border::Radius = ct.corner_radii.radius_s.into();
+        let rad_m: cosmic::iced::border::Radius = ct.corner_radii.radius_m.into();
+        let pill_acc_bg: cosmic::iced::Color = ct.accent_color().into();
+        let pill_acc_fg: cosmic::iced::Color = ct.on_accent_color().into();
+        let pill_std_bg: cosmic::iced::Color = ct.bg_component_color().into();
+        let pill_std_fg: cosmic::iced::Color = ct.on_bg_component_color().into();
+        let std_bg: cosmic::iced::Color = ct.bg_component_color().into();
+        let std_fg: cosmic::iced::Color = ct.on_bg_component_color().into();
+        let sug_bg: cosmic::iced::Color = ct.accent_color().into();
+        let sug_fg: cosmic::iced::Color = ct.on_accent_color().into();
+        let acc: cosmic::iced::Color = ct.accent_color().into();
+        let base_c: cosmic::iced::Color = ct.bg_component_color().into();
+        let des_bg = cosmic::iced::Color {
+            r: base_c.r * 0.70 + acc.r * 0.30,
+            g: base_c.g * 0.70 + acc.g * 0.30,
+            b: base_c.b * 0.70 + acc.b * 0.30,
+            a: 1.0,
+        };
+        let des_fg: cosmic::iced::Color = ct.on_bg_component_color().into();
+        let mut hist_fg: cosmic::iced::Color = ct.on_bg_component_color().into();
+        hist_fg.a = 0.8;
+        let mut hist_dim: cosmic::iced::Color = ct.on_bg_component_color().into();
+        hist_dim.a = 0.3;
+        let disp_bg: cosmic::iced::Color = ct.bg_component_color().into();
+        let disp_fg: cosmic::iced::Color = ct.on_bg_component_color().into();
+        let mut border_clr: cosmic::iced::Color = ct.on_bg_component_color().into();
+        border_clr.a = 0.2;
+        let acc_dim_bg = cosmic::iced::Color {
+            r: base_c.r * 0.85 + acc.r * 0.15,
+            g: base_c.g * 0.85 + acc.g * 0.15,
+            b: base_c.b * 0.85 + acc.b * 0.15,
+            a: 0.5,
+        };
+
+        Self {
+            rad,
+            rad_m,
+            pill_acc_bg,
+            pill_acc_fg,
+            pill_std_bg,
+            pill_std_fg,
+            std_bg,
+            std_fg,
+            sug_bg,
+            sug_fg,
+            des_bg,
+            des_fg,
+            hist_fg,
+            hist_dim,
+            disp_bg,
+            disp_fg,
+            border_clr,
+            acc_dim_bg,
+        }
+    }
+
+    fn calc_btn(
+        &self,
+        label: &'static str,
+        bg: cosmic::iced::Color,
+        fg: cosmic::iced::Color,
+        radius: cosmic::iced::border::Radius,
+        enabled: bool,
+    ) -> Element<'static, Message> {
+        let inner = container(
+            text(label)
+                .size(15)
+                .shaping(Shaping::Advanced)
+                .align_x(Alignment::Center),
+        )
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .align_x(Alignment::Center)
+        .align_y(Alignment::Center)
+        .style(
+            move |_: &cosmic::Theme| cosmic::iced::widget::container::Style {
+                background: Some(cosmic::iced::Background::Color(bg)),
+                text_color: Some(fg),
+                border: cosmic::iced::Border {
+                    radius,
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+        );
+        let btn = button::custom(inner)
+            .padding(0)
+            .width(Length::Fill)
+            .height(Length::Fill);
+        if enabled {
+            btn.on_press(Message::Input(label)).into()
+        } else {
+            btn.into()
+        }
+    }
+
+    fn d(&self, l: &'static str) -> Element<'static, Message> {
+        self.calc_btn(l, self.std_bg, self.std_fg, self.rad, true)
+    }
+
+    fn o(&self, l: &'static str) -> Element<'static, Message> {
+        self.calc_btn(l, self.sug_bg, self.sug_fg, self.rad, true)
+    }
+
+    fn a(&self, l: &'static str) -> Element<'static, Message> {
+        self.calc_btn(l, self.des_bg, self.des_fg, self.rad, true)
+    }
+
+    fn dim(&self, l: &'static str) -> Element<'static, Message> {
+        self.calc_btn(l, self.acc_dim_bg, self.std_fg, self.rad, false)
+    }
+
+    fn eq(&self) -> Element<'static, Message> {
+        self.calc_btn("=", self.sug_bg, self.sug_fg, self.rad, true)
+    }
+}
+
 struct CalcApp {
     core: Core,
     mode: CalcMode,
@@ -383,132 +525,13 @@ impl Application for CalcApp {
     }
 
     fn view(&self) -> Element<'_, Message> {
-        let (
-            rad,
-            rad_m,
-            pill_acc_bg,
-            pill_acc_fg,
-            pill_std_bg,
-            pill_std_fg,
-            std_bg,
-            std_fg,
-            sug_bg,
-            sug_fg,
-            des_bg,
-            des_fg,
-            hist_fg,
-            hist_dim,
-            disp_bg,
-            disp_fg,
-            border_clr,
-            acc_dim_bg,
-        ) = {
-            let theme = cosmic::theme::active();
-            let ct = theme.cosmic();
-            let rad: cosmic::iced::border::Radius = ct.corner_radii.radius_s.into();
-            let rad_m: cosmic::iced::border::Radius = ct.corner_radii.radius_m.into();
-            let pill_acc_bg: cosmic::iced::Color = ct.accent_color().into();
-            let pill_acc_fg: cosmic::iced::Color = ct.on_accent_color().into();
-            let pill_std_bg: cosmic::iced::Color = ct.bg_component_color().into();
-            let pill_std_fg: cosmic::iced::Color = ct.on_bg_component_color().into();
-            let std_bg: cosmic::iced::Color = ct.bg_component_color().into();
-            let std_fg: cosmic::iced::Color = ct.on_bg_component_color().into();
-            let sug_bg: cosmic::iced::Color = ct.accent_color().into();
-            let sug_fg: cosmic::iced::Color = ct.on_accent_color().into();
-            let acc: cosmic::iced::Color = ct.accent_color().into();
-            let base_c: cosmic::iced::Color = ct.bg_component_color().into();
-            let des_bg = cosmic::iced::Color {
-                r: base_c.r * 0.70 + acc.r * 0.30,
-                g: base_c.g * 0.70 + acc.g * 0.30,
-                b: base_c.b * 0.70 + acc.b * 0.30,
-                a: 1.0,
-            };
-            let des_fg: cosmic::iced::Color = ct.on_bg_component_color().into();
-            let mut hist_fg: cosmic::iced::Color = ct.on_bg_component_color().into();
-            hist_fg.a = 0.8;
-            let mut hist_dim: cosmic::iced::Color = ct.on_bg_component_color().into();
-            hist_dim.a = 0.3;
-            let disp_bg: cosmic::iced::Color = ct.bg_component_color().into();
-            let disp_fg: cosmic::iced::Color = ct.on_bg_component_color().into();
-            let mut border_clr: cosmic::iced::Color = ct.on_bg_component_color().into();
-            border_clr.a = 0.2;
-            let acc_dim_bg = cosmic::iced::Color {
-                r: base_c.r * 0.85 + acc.r * 0.15,
-                g: base_c.g * 0.85 + acc.g * 0.15,
-                b: base_c.b * 0.85 + acc.b * 0.15,
-                a: 0.5,
-            };
-            (
-                rad,
-                rad_m,
-                pill_acc_bg,
-                pill_acc_fg,
-                pill_std_bg,
-                pill_std_fg,
-                std_bg,
-                std_fg,
-                sug_bg,
-                sug_fg,
-                des_bg,
-                des_fg,
-                hist_fg,
-                hist_dim,
-                disp_bg,
-                disp_fg,
-                border_clr,
-                acc_dim_bg,
-            )
-        };
-
-        let calc_btn = |label: &'static str,
-                        bg: cosmic::iced::Color,
-                        fg: cosmic::iced::Color,
-                        radius: cosmic::iced::border::Radius,
-                        enabled: bool|
-         -> Element<'static, Message> {
-            let inner = container(
-                text(label)
-                    .size(15)
-                    .shaping(Shaping::Advanced)
-                    .align_x(Alignment::Center),
-            )
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .align_x(Alignment::Center)
-            .align_y(Alignment::Center)
-            .style(
-                move |_: &cosmic::Theme| cosmic::iced::widget::container::Style {
-                    background: Some(cosmic::iced::Background::Color(bg)),
-                    text_color: Some(fg),
-                    border: cosmic::iced::Border {
-                        radius,
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                },
-            );
-            let btn = button::custom(inner)
-                .padding(0)
-                .width(Length::Fill)
-                .height(Length::Fill);
-            if enabled {
-                btn.on_press(Message::Input(label)).into()
-            } else {
-                btn.into()
-            }
-        };
-
-        let d = |l: &'static str| calc_btn(l, std_bg, std_fg, rad, true);
-        let o = |l: &'static str| calc_btn(l, sug_bg, sug_fg, rad, true);
-        let a = |l: &'static str| calc_btn(l, des_bg, des_fg, rad, true);
-        let dim = |l: &'static str| calc_btn(l, acc_dim_bg, std_fg, rad, false);
-        let eq = || calc_btn("=", sug_bg, sug_fg, rad, true);
+        let style = StyleContext::from_theme(cosmic::theme::active());
 
         let hist_active = self.show_history;
         let (hist_btn_bg, hist_btn_fg) = if hist_active {
-            (pill_acc_bg, pill_acc_fg)
+            (style.pill_acc_bg, style.pill_acc_fg)
         } else {
-            (pill_std_bg, pill_std_fg)
+            (style.pill_std_bg, style.pill_std_fg)
         };
         let history_btn: Element<'_, Message> = cosmic::iced::widget::tooltip(
             container(
@@ -528,7 +551,7 @@ impl Application for CalcApp {
                             background: Some(cosmic::iced::Background::Color(hist_btn_bg)),
                             text_color: Some(hist_btn_fg),
                             border: cosmic::iced::Border {
-                                radius: rad_m,
+                                radius: style.rad_m,
                                 ..Default::default()
                             },
                             ..Default::default()
@@ -560,13 +583,13 @@ impl Application for CalcApp {
             .padding(6)
             .style(
                 move |_: &cosmic::Theme| cosmic::iced::widget::container::Style {
-                    background: Some(cosmic::iced::Background::Color(disp_bg)),
+                    background: Some(cosmic::iced::Background::Color(style.disp_bg)),
                     border: cosmic::iced::Border {
-                        radius: rad_m,
-                        color: border_clr,
+                        radius: style.rad_m,
+                        color: style.border_clr,
                         width: 1.0,
                     },
-                    text_color: Some(disp_fg),
+                    text_color: Some(style.disp_fg),
                     ..Default::default()
                 },
             ),
@@ -575,64 +598,23 @@ impl Application for CalcApp {
         .into();
 
         let content: Element<'_, Message> = if self.show_history {
-            self.view_history(
-                pill_acc_bg,
-                pill_acc_fg,
-                pill_std_bg,
-                pill_std_fg,
-                hist_fg,
-                hist_dim,
-                rad_m,
-            )
+            self.view_history(&style)
         } else {
             match self.mode {
                 CalcMode::Standard | CalcMode::Scientific => {
-                    self.view_standard_sci(disp_bg, disp_fg, rad_m, &d, &o, &a, &eq)
+                    self.view_standard_sci(&style)
                 }
-                CalcMode::Programmer => self.view_programmer(
-                    std_fg,
-                    sug_bg,
-                    sug_fg,
-                    des_bg,
-                    des_fg,
-                    disp_bg,
-                    disp_fg,
-                    rad,
-                    rad_m,
-                    pill_acc_bg,
-                    pill_acc_fg,
-                    pill_std_bg,
-                    pill_std_fg,
-                    &d,
-                    &o,
-                    &a,
-                    &dim,
-                ),
-                CalcMode::Rpn => self.view_rpn(
-                    sug_bg, sug_fg, des_bg, des_fg, disp_bg, disp_fg, rad_m, &d, &o, &a,
-                ),
-                CalcMode::Statistics => self.view_statistics(
-                    sug_bg,
-                    sug_fg,
-                    des_bg,
-                    des_fg,
-                    disp_bg,
-                    disp_fg,
-                    rad_m,
-                    pill_std_bg,
-                    pill_std_fg,
-                    &d,
-                    &o,
-                    &a,
-                ),
+                CalcMode::Programmer => self.view_programmer(&style),
+                CalcMode::Rpn => self.view_rpn(&style),
+                CalcMode::Statistics => self.view_statistics(&style),
             }
         };
 
         let panel_active = self.show_panel;
         let (panel_btn_bg, panel_btn_fg) = if panel_active {
-            (pill_acc_bg, pill_acc_fg)
+            (style.pill_acc_bg, style.pill_acc_fg)
         } else {
-            (pill_std_bg, pill_std_fg)
+            (style.pill_std_bg, style.pill_std_fg)
         };
 
         // ── Mode-specific panel label ─────────────────────────────────────
@@ -675,22 +657,22 @@ impl Application for CalcApp {
         };
 
         // ── Shared popup item helpers ─────────────────────────────────────
-        let popup_item_bg = pill_std_bg;
-        let popup_item_fg = pill_std_fg;
+        let popup_item_bg = style.pill_std_bg;
+        let popup_item_fg = style.pill_std_fg;
         let popup_row_style = move |_: &cosmic::Theme| cosmic::iced::widget::container::Style {
             background: Some(cosmic::iced::Background::Color(popup_item_bg)),
             text_color: Some(popup_item_fg),
             border: cosmic::iced::Border {
-                radius: rad_m,
+                radius: style.rad_m,
                 ..Default::default()
             },
             ..Default::default()
         };
         let popup_panel_style = move |_: &cosmic::Theme| cosmic::iced::widget::container::Style {
-            background: Some(cosmic::iced::Background::Color(disp_bg)),
+            background: Some(cosmic::iced::Background::Color(style.disp_bg)),
             border: cosmic::iced::Border {
-                radius: rad_m,
-                color: border_clr,
+                radius: style.rad_m,
+                color: style.border_clr,
                 width: 1.0,
             },
             ..Default::default()
@@ -960,7 +942,7 @@ impl Application for CalcApp {
                     background: Some(cosmic::iced::Background::Color(panel_btn_bg)),
                     text_color: Some(panel_btn_fg),
                     border: cosmic::iced::Border {
-                        radius: rad_m,
+                        radius: style.rad_m,
                         ..Default::default()
                     },
                     ..Default::default()
@@ -1074,17 +1056,7 @@ impl Application for CalcApp {
 // ── View helpers ──────────────────────────────────────────────────────────────
 
 impl CalcApp {
-    #[allow(clippy::too_many_arguments)]
-    fn view_history(
-        &self,
-        pill_acc_bg: cosmic::iced::Color,
-        pill_acc_fg: cosmic::iced::Color,
-        pill_std_bg: cosmic::iced::Color,
-        pill_std_fg: cosmic::iced::Color,
-        hist_fg: cosmic::iced::Color,
-        hist_dim: cosmic::iced::Color,
-        rad_m: cosmic::iced::border::Radius,
-    ) -> Element<'_, Message> {
+    fn view_history(&self, style: &StyleContext) -> Element<'_, Message> {
         let mut col = column().spacing(8).padding([4, 0]).width(Length::Fill);
         col = col.push(
             button::custom(
@@ -1100,10 +1072,10 @@ impl CalcApp {
                 .padding([6, 0])
                 .style(move |_: &cosmic::Theme| {
                     cosmic::iced::widget::container::Style {
-                        background: Some(cosmic::iced::Background::Color(pill_std_bg)),
-                        text_color: Some(pill_std_fg),
+                        background: Some(cosmic::iced::Background::Color(style.pill_std_bg)),
+                        text_color: Some(style.pill_std_fg),
                         border: cosmic::iced::Border {
-                            radius: rad_m,
+                            radius: style.rad_m,
                             ..Default::default()
                         },
                         ..Default::default()
@@ -1126,7 +1098,7 @@ impl CalcApp {
                 .align_x(Alignment::Center)
                 .style(move |_: &cosmic::Theme| {
                     cosmic::iced::widget::container::Style {
-                        text_color: Some(hist_dim),
+                        text_color: Some(style.hist_dim),
                         ..Default::default()
                     }
                 }),
@@ -1139,11 +1111,11 @@ impl CalcApp {
                     (
                         "Copied to clipboard!".to_string(),
                         Alignment::Center,
-                        pill_acc_fg,
-                        Some(cosmic::iced::Background::Color(pill_acc_bg)),
+                        style.pill_acc_fg,
+                        Some(cosmic::iced::Background::Color(style.pill_acc_bg)),
                     )
                 } else {
-                    (entry.clone(), Alignment::End, hist_fg, None)
+                    (entry.clone(), Alignment::End, style.hist_fg, None)
                 };
                 col = col.push(
                     button::custom(
@@ -1156,7 +1128,7 @@ impl CalcApp {
                                     background: bg_clr,
                                     text_color: Some(text_clr),
                                     border: cosmic::iced::Border {
-                                        radius: rad_m,
+                                        radius: style.rad_m,
                                         ..Default::default()
                                     },
                                     ..Default::default()
@@ -1176,16 +1148,9 @@ impl CalcApp {
             .into()
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn view_standard_sci<'a: 'b, 'b>(
         &'b self,
-        disp_bg: cosmic::iced::Color,
-        disp_fg: cosmic::iced::Color,
-        rad_m: cosmic::iced::border::Radius,
-        d: &impl Fn(&'static str) -> Element<'a, Message>,
-        o: &impl Fn(&'static str) -> Element<'a, Message>,
-        a: &impl Fn(&'static str) -> Element<'a, Message>,
-        eq: &impl Fn() -> Element<'a, Message>,
+        style: &StyleContext,
     ) -> Element<'a, Message> {
         let font_size: u16 = if self.display.len() > 12 { 28 } else { 42 };
         let display_str: String = self.display.clone();
@@ -1200,10 +1165,10 @@ impl CalcApp {
             .align_x(Alignment::End)
             .style(
                 move |_: &cosmic::Theme| cosmic::iced::widget::container::Style {
-                    background: Some(cosmic::iced::Background::Color(disp_bg)),
-                    text_color: Some(disp_fg),
+                    background: Some(cosmic::iced::Background::Color(style.disp_bg)),
+                    text_color: Some(style.disp_fg),
                     border: cosmic::iced::Border {
-                        radius: rad_m,
+                        radius: style.rad_m,
                         color: cosmic::iced::Color::TRANSPARENT,
                         width: 0.0,
                     },
@@ -1218,38 +1183,38 @@ impl CalcApp {
         let r1 = row()
             .spacing(6)
             .height(Length::Fill)
-            .push(a("CE"))
-            .push(a("C"))
-            .push(a("DEL"))
-            .push(o("div"));
+            .push(style.a("CE"))
+            .push(style.a("C"))
+            .push(style.a("DEL"))
+            .push(style.o("div"));
         let r2 = row()
             .spacing(6)
             .height(Length::Fill)
-            .push(d("7"))
-            .push(d("8"))
-            .push(d("9"))
-            .push(o("x"));
+            .push(style.d("7"))
+            .push(style.d("8"))
+            .push(style.d("9"))
+            .push(style.o("x"));
         let r3 = row()
             .spacing(6)
             .height(Length::Fill)
-            .push(d("4"))
-            .push(d("5"))
-            .push(d("6"))
-            .push(o("-"));
+            .push(style.d("4"))
+            .push(style.d("5"))
+            .push(style.d("6"))
+            .push(style.o("-"));
         let r4 = row()
             .spacing(6)
             .height(Length::Fill)
-            .push(d("1"))
-            .push(d("2"))
-            .push(d("3"))
-            .push(o("+"));
+            .push(style.d("1"))
+            .push(style.d("2"))
+            .push(style.d("3"))
+            .push(style.o("+"));
         let r5 = row()
             .spacing(6)
             .height(Length::Fill)
-            .push(d("+/-"))
-            .push(d("0"))
-            .push(d("."))
-            .push(eq());
+            .push(style.d("+/-"))
+            .push(style.d("0"))
+            .push(style.d("."))
+            .push(style.eq());
         let grid = column()
             .spacing(6)
             .height(Length::Fill)
@@ -1267,26 +1232,9 @@ impl CalcApp {
             .into()
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn view_programmer<'a: 'b, 'b>(
         &'b self,
-        std_fg: cosmic::iced::Color,
-        sug_bg: cosmic::iced::Color,
-        sug_fg: cosmic::iced::Color,
-        des_bg: cosmic::iced::Color,
-        des_fg: cosmic::iced::Color,
-        disp_bg: cosmic::iced::Color,
-        disp_fg: cosmic::iced::Color,
-        rad: cosmic::iced::border::Radius,
-        rad_m: cosmic::iced::border::Radius,
-        pill_acc_bg: cosmic::iced::Color,
-        pill_acc_fg: cosmic::iced::Color,
-        pill_std_bg: cosmic::iced::Color,
-        pill_std_fg: cosmic::iced::Color,
-        d: &impl Fn(&'static str) -> Element<'a, Message>,
-        o: &impl Fn(&'static str) -> Element<'a, Message>,
-        a: &impl Fn(&'static str) -> Element<'a, Message>,
-        dim: &impl Fn(&'static str) -> Element<'a, Message>,
+        style: &StyleContext,
     ) -> Element<'a, Message> {
         let base = self.prog_base;
         let dec_val = i64::from_str_radix(&self.display, base.radix()).unwrap_or(0);
@@ -1338,10 +1286,10 @@ impl CalcApp {
             .align_x(Alignment::End)
             .style(
                 move |_: &cosmic::Theme| cosmic::iced::widget::container::Style {
-                    background: Some(cosmic::iced::Background::Color(disp_bg)),
-                    text_color: Some(disp_fg),
+                    background: Some(cosmic::iced::Background::Color(style.disp_bg)),
+                    text_color: Some(style.disp_fg),
                     border: cosmic::iced::Border {
-                        radius: rad_m,
+                        radius: style.rad_m,
                         color: cosmic::iced::Color::TRANSPARENT,
                         width: 0.0,
                     },
@@ -1402,9 +1350,9 @@ impl CalcApp {
 
         let hex_digit = |l: &'static str| -> Element<'_, Message> {
             let (bg, fg) = if hex_ok {
-                (sug_bg, sug_fg)
+                (style.sug_bg, style.sug_fg)
             } else {
-                (des_bg, des_fg)
+                (style.des_bg, style.des_fg)
             };
             let btn = button::custom(
                 container(
@@ -1422,7 +1370,7 @@ impl CalcApp {
                         background: Some(cosmic::iced::Background::Color(bg)),
                         text_color: Some(fg),
                         border: cosmic::iced::Border {
-                            radius: rad,
+                            radius: style.rad,
                             ..Default::default()
                         },
                         ..Default::default()
@@ -1449,7 +1397,7 @@ impl CalcApp {
                 ("x",   Some('*')) | ("div", Some('/')) => true,
                 _ => false,
             };
-            let (bg, fg) = if is_active { (pill_acc_bg, pill_acc_fg) } else { (des_bg, std_fg) };
+            let (bg, fg) = if is_active { (style.pill_acc_bg, style.pill_acc_fg) } else { (style.des_bg, style.std_fg) };
             // Clicking an already-active op cancels it; otherwise sets it
             let msg = if is_active { Message::ClearOp } else { Message::Input(label) };
             button::custom(
@@ -1468,7 +1416,7 @@ impl CalcApp {
                         background: Some(cosmic::iced::Background::Color(bg)),
                         text_color: Some(fg),
                         border: cosmic::iced::Border {
-                            radius: rad,
+                            radius: style.rad,
                             ..Default::default()
                         },
                         ..Default::default()
@@ -1483,7 +1431,7 @@ impl CalcApp {
         };
 
         let maybe =
-            |l: &'static str, ok: bool| -> Element<'_, Message> { if ok { d(l) } else { dim(l) } };
+            |l: &'static str, ok: bool| -> Element<'_, Message> { if ok { style.d(l) } else { style.dim(l) } };
 
         // 6-row grid. Right column is always bitwise ops.
         // In HEX mode, left 3 cols of rows 1-2 show A-F (dimmed otherwise).
@@ -1498,14 +1446,14 @@ impl CalcApp {
             .push(maybe("7", oct_ok)).push(maybe("8", dec_ok)).push(maybe("9", dec_ok))
             .push(if hex_ok { bw_btn("AND") } else { bw_btn("OR") });
         let r4 = row().spacing(6).height(Length::Fill)
-            .push(d("4")).push(d("5")).push(d("6"))
+            .push(style.d("4")).push(style.d("5")).push(style.d("6"))
             .push(if hex_ok { bw_btn("OR") } else { bw_btn("XOR") });
         let r5 = row().spacing(6).height(Length::Fill)
-            .push(d("1")).push(d("2")).push(d("3"))
+            .push(style.d("1")).push(style.d("2")).push(style.d("3"))
             .push(if hex_ok { bw_btn("XOR") } else { bw_btn("<<") });
         let clr_op_btn: Element<'_, Message> = {
             let has_op = self.current_op.is_some() && self.new_input;
-            let (bg, fg) = if has_op { (pill_acc_bg, pill_acc_fg) } else { (des_bg, std_fg) };
+            let (bg, fg) = if has_op { (style.pill_acc_bg, style.pill_acc_fg) } else { (style.des_bg, style.std_fg) };
             let btn = button::custom(
                 container(text("CLR OP").size(11).shaping(Shaping::Advanced).align_x(Alignment::Center))
                     .width(Length::Fill).height(Length::Fill)
@@ -1513,7 +1461,7 @@ impl CalcApp {
                     .style(move |_: &cosmic::Theme| cosmic::iced::widget::container::Style {
                         background: Some(cosmic::iced::Background::Color(bg)),
                         text_color: Some(fg),
-                        border: cosmic::iced::Border { radius: rad, ..Default::default() },
+                        border: cosmic::iced::Border { radius: style.rad, ..Default::default() },
                         ..Default::default()
                     }),
             )
@@ -1521,10 +1469,10 @@ impl CalcApp {
             if has_op { btn.on_press(Message::ClearOp).into() } else { btn.into() }
         };
         let r6 = row().spacing(6).height(Length::Fill)
-            .push(a("CE")).push(d("0")).push(a("DEL"))
+            .push(style.a("CE")).push(style.d("0")).push(style.a("DEL"))
             .push(if hex_ok { bw_btn(">>") } else { clr_op_btn });
         let r7 = row().spacing(6).height(Length::Fill)
-            .push(o("div")).push(d("+/-")).push(o("x")).push(o("="));
+            .push(style.o("div")).push(style.d("+/-")).push(style.o("x")).push(style.o("="));
 
         column()
             .spacing(6)
@@ -1541,19 +1489,9 @@ impl CalcApp {
             .into()
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn view_rpn<'a: 'b, 'b>(
         &'b self,
-        sug_bg: cosmic::iced::Color,
-        sug_fg: cosmic::iced::Color,
-        des_bg: cosmic::iced::Color,
-        des_fg: cosmic::iced::Color,
-        disp_bg: cosmic::iced::Color,
-        disp_fg: cosmic::iced::Color,
-        rad_m: cosmic::iced::border::Radius,
-        d: &impl Fn(&'static str) -> Element<'a, Message>,
-        o: &impl Fn(&'static str) -> Element<'a, Message>,
-        a: &impl Fn(&'static str) -> Element<'a, Message>,
+        style: &StyleContext,
     ) -> Element<'a, Message> {
         let font_size: u16 = if self.display.len() > 12 { 28 } else { 38 };
         let stack_items: Vec<String> = self
@@ -1591,10 +1529,10 @@ impl CalcApp {
             .align_x(Alignment::End)
             .style(
                 move |_: &cosmic::Theme| cosmic::iced::widget::container::Style {
-                    background: Some(cosmic::iced::Background::Color(disp_bg)),
-                    text_color: Some(disp_fg),
+                    background: Some(cosmic::iced::Background::Color(style.disp_bg)),
+                    text_color: Some(style.disp_fg),
                     border: cosmic::iced::Border {
-                        radius: rad_m,
+                        radius: style.rad_m,
                         color: cosmic::iced::Color::TRANSPARENT,
                         width: 0.0,
                     },
@@ -1627,7 +1565,7 @@ impl CalcApp {
                         background: Some(cosmic::iced::Background::Color(bg)),
                         text_color: Some(fg),
                         border: cosmic::iced::Border {
-                            radius: rad_m,
+                            radius: style.rad_m,
                             ..Default::default()
                         },
                         ..Default::default()
@@ -1641,44 +1579,44 @@ impl CalcApp {
             .into()
         };
 
-        let enter_btn = special("Enter", sug_bg, sug_fg, Message::Input("ENTER"));
-        let drop_btn = special("Drop", des_bg, des_fg, Message::Input("DROP"));
+        let enter_btn = special("Enter", style.sug_bg, style.sug_fg, Message::Input("ENTER"));
+        let drop_btn = special("Drop", style.des_bg, style.des_fg, Message::Input("DROP"));
 
         let r1 = row()
             .spacing(6)
             .height(Length::Fill)
-            .push(a("CE"))
-            .push(a("C"))
+            .push(style.a("CE"))
+            .push(style.a("C"))
             .push(drop_btn)
             .push(enter_btn);
         let r2 = row()
             .spacing(6)
             .height(Length::Fill)
-            .push(d("7"))
-            .push(d("8"))
-            .push(d("9"))
-            .push(o("div"));
+            .push(style.d("7"))
+            .push(style.d("8"))
+            .push(style.d("9"))
+            .push(style.o("div"));
         let r3 = row()
             .spacing(6)
             .height(Length::Fill)
-            .push(d("4"))
-            .push(d("5"))
-            .push(d("6"))
-            .push(o("x"));
+            .push(style.d("4"))
+            .push(style.d("5"))
+            .push(style.d("6"))
+            .push(style.o("x"));
         let r4 = row()
             .spacing(6)
             .height(Length::Fill)
-            .push(d("1"))
-            .push(d("2"))
-            .push(d("3"))
-            .push(o("-"));
+            .push(style.d("1"))
+            .push(style.d("2"))
+            .push(style.d("3"))
+            .push(style.o("-"));
         let r5 = row()
             .spacing(6)
             .height(Length::Fill)
-            .push(d("+/-"))
-            .push(d("0"))
-            .push(d("."))
-            .push(o("+"));
+            .push(style.d("+/-"))
+            .push(style.d("0"))
+            .push(style.d("."))
+            .push(style.o("+"));
         let grid = column()
             .spacing(6)
             .height(Length::Fill)
@@ -1697,21 +1635,9 @@ impl CalcApp {
             .into()
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn view_statistics<'a: 'b, 'b>(
         &'b self,
-        sug_bg: cosmic::iced::Color,
-        sug_fg: cosmic::iced::Color,
-        des_bg: cosmic::iced::Color,
-        des_fg: cosmic::iced::Color,
-        disp_bg: cosmic::iced::Color,
-        disp_fg: cosmic::iced::Color,
-        rad_m: cosmic::iced::border::Radius,
-        pill_std_bg: cosmic::iced::Color,
-        pill_std_fg: cosmic::iced::Color,
-        d: &impl Fn(&'static str) -> Element<'a, Message>,
-        _o: &impl Fn(&'static str) -> Element<'a, Message>,
-        a: &impl Fn(&'static str) -> Element<'a, Message>,
+        style: &StyleContext,
     ) -> Element<'a, Message> {
         let n = self.stat_values.len();
         let sum = self.stat_values.iter().sum::<f64>();
@@ -1756,10 +1682,10 @@ impl CalcApp {
             .align_x(Alignment::End)
             .style(
                 move |_: &cosmic::Theme| cosmic::iced::widget::container::Style {
-                    background: Some(cosmic::iced::Background::Color(disp_bg)),
-                    text_color: Some(disp_fg),
+                    background: Some(cosmic::iced::Background::Color(style.disp_bg)),
+                    text_color: Some(style.disp_fg),
                     border: cosmic::iced::Border {
-                        radius: rad_m,
+                        radius: style.rad_m,
                         color: cosmic::iced::Color::TRANSPARENT,
                         width: 0.0,
                     },
@@ -1792,7 +1718,7 @@ impl CalcApp {
                         background: Some(cosmic::iced::Background::Color(bg)),
                         text_color: Some(fg),
                         border: cosmic::iced::Border {
-                            radius: rad_m,
+                            radius: style.rad_m,
                             ..Default::default()
                         },
                         ..Default::default()
@@ -1820,10 +1746,10 @@ impl CalcApp {
             .padding([4, 6])
             .style(
                 move |_: &cosmic::Theme| cosmic::iced::widget::container::Style {
-                    text_color: Some(pill_std_fg),
-                    background: Some(cosmic::iced::Background::Color(pill_std_bg)),
+                    text_color: Some(style.pill_std_fg),
+                    background: Some(cosmic::iced::Background::Color(style.pill_std_bg)),
                     border: cosmic::iced::Border {
-                        radius: rad_m,
+                        radius: style.rad_m,
                         ..Default::default()
                     },
                     ..Default::default()
@@ -1833,38 +1759,38 @@ impl CalcApp {
         let r1 = row()
             .spacing(6)
             .height(Length::Fill)
-            .push(a("CE"))
-            .push(a("C"))
-            .push(a("DEL"))
-            .push(action_btn("Clr", Message::StatClear, des_bg, des_fg));
+            .push(style.a("CE"))
+            .push(style.a("C"))
+            .push(style.a("DEL"))
+            .push(action_btn("Clr", Message::StatClear, style.des_bg, style.des_fg));
         let r2 = row()
             .spacing(6)
             .height(Length::Fill)
-            .push(d("7"))
-            .push(d("8"))
-            .push(d("9"))
-            .push(d("DEL"));
+            .push(style.d("7"))
+            .push(style.d("8"))
+            .push(style.d("9"))
+            .push(style.d("DEL"));
         let r3 = row()
             .spacing(6)
             .height(Length::Fill)
-            .push(d("4"))
-            .push(d("5"))
-            .push(d("6"))
-            .push(d("+/-"));
+            .push(style.d("4"))
+            .push(style.d("5"))
+            .push(style.d("6"))
+            .push(style.d("+/-"));
         let r4 = row()
             .spacing(6)
             .height(Length::Fill)
-            .push(d("1"))
-            .push(d("2"))
-            .push(d("3"))
-            .push(d("."));
+            .push(style.d("1"))
+            .push(style.d("2"))
+            .push(style.d("3"))
+            .push(style.d("."));
         let r5 = row()
             .spacing(6)
             .height(Length::Fill)
-            .push(d("CE"))
-            .push(d("0"))
-            .push(d("C"))
-            .push(action_btn("Add", Message::StatAdd, sug_bg, sug_fg));
+            .push(style.d("CE"))
+            .push(style.d("0"))
+            .push(style.d("C"))
+            .push(action_btn("Add", Message::StatAdd, style.sug_bg, style.sug_fg));
         let grid = column()
             .spacing(6)
             .height(Length::Fill)
