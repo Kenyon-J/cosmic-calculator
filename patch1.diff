@@ -1,0 +1,32 @@
+<<<<<<< SEARCH
+impl Application for CalcApp {
+=======
+struct StyleContext<'a> {
+    rad: cosmic::iced::border::Radius,
+    rad_m: cosmic::iced::border::Radius,
+    pill_acc_bg: cosmic::iced::Color,
+    pill_acc_fg: cosmic::iced::Color,
+    pill_std_bg: cosmic::iced::Color,
+    pill_std_fg: cosmic::iced::Color,
+    std_bg: cosmic::iced::Color,
+    std_fg: cosmic::iced::Color,
+    sug_bg: cosmic::iced::Color,
+    sug_fg: cosmic::iced::Color,
+    des_bg: cosmic::iced::Color,
+    des_fg: cosmic::iced::Color,
+    hist_fg: cosmic::iced::Color,
+    hist_dim: cosmic::iced::Color,
+    disp_bg: cosmic::iced::Color,
+    disp_fg: cosmic::iced::Color,
+    border_clr: cosmic::iced::Color,
+    acc_dim_bg: cosmic::iced::Color,
+
+    d: Box<dyn Fn(&'static str) -> Element<'a, Message> + 'a>,
+    o: Box<dyn Fn(&'static str) -> Element<'a, Message> + 'a>,
+    a: Box<dyn Fn(&'static str) -> Element<'a, Message> + 'a>,
+    dim: Box<dyn Fn(&'static str) -> Element<'a, Message> + 'a>,
+    eq: Box<dyn Fn() -> Element<'a, Message> + 'a>,
+}
+
+impl Application for CalcApp {
+>>>>>>> REPLACE
