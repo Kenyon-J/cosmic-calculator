@@ -2277,27 +2277,27 @@ impl CalcApp {
                         self.rpn_stack.push(v);
                     }
                 if self.rpn_stack.len() >= 2 {
-                    let b = self.rpn_stack.pop().unwrap();
-                    let a = self.rpn_stack.pop().unwrap();
-                    let op = match input {
-                        "x" => '*',
-                        "div" => '/',
-                        o => o.chars().next().unwrap_or('+'),
-                    };
-                    let res = Self::apply_op(op, a, b);
-                    let r = Self::format_result(res);
-                    self.push_history(
-                        &format!(
-                            "{} {} {}",
-                            Self::format_result(a),
-                            input,
-                            Self::format_result(b)
-                        ),
-                        &r,
-                    );
-                    self.rpn_stack.push(res);
-                    self.display = r;
-                    self.new_input = true;
+                    if let (Some(b), Some(a)) = (self.rpn_stack.pop(), self.rpn_stack.pop()) {
+                        let op = match input {
+                            "x" => '*',
+                            "div" => '/',
+                            o => o.chars().next().unwrap_or('+'),
+                        };
+                        let res = Self::apply_op(op, a, b);
+                        let r = Self::format_result(res);
+                        self.push_history(
+                            &format!(
+                                "{} {} {}",
+                                Self::format_result(a),
+                                input,
+                                Self::format_result(b)
+                            ),
+                            &r,
+                        );
+                        self.rpn_stack.push(res);
+                        self.display = r;
+                        self.new_input = true;
+                    }
                 }
             }
             "CE" => self.clear_entry(),
