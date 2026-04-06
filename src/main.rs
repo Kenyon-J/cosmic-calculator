@@ -117,6 +117,35 @@ enum Message {
     ClearOp,
 }
 
+struct StyleContext<'a> {
+    rad: cosmic::iced::border::Radius,
+    rad_m: cosmic::iced::border::Radius,
+    pill_acc_bg: cosmic::iced::Color,
+    pill_acc_fg: cosmic::iced::Color,
+    pill_std_bg: cosmic::iced::Color,
+    pill_std_fg: cosmic::iced::Color,
+    #[allow(dead_code)]
+    std_bg: cosmic::iced::Color,
+    std_fg: cosmic::iced::Color,
+    sug_bg: cosmic::iced::Color,
+    sug_fg: cosmic::iced::Color,
+    des_bg: cosmic::iced::Color,
+    des_fg: cosmic::iced::Color,
+    hist_fg: cosmic::iced::Color,
+    hist_dim: cosmic::iced::Color,
+    disp_bg: cosmic::iced::Color,
+    disp_fg: cosmic::iced::Color,
+    border_clr: cosmic::iced::Color,
+    #[allow(dead_code)]
+    acc_dim_bg: cosmic::iced::Color,
+
+    d: Box<dyn Fn(&'static str) -> Element<'a, Message> + 'a>,
+    o: Box<dyn Fn(&'static str) -> Element<'a, Message> + 'a>,
+    a: Box<dyn Fn(&'static str) -> Element<'a, Message> + 'a>,
+    dim: Box<dyn Fn(&'static str) -> Element<'a, Message> + 'a>,
+    eq: Box<dyn Fn() -> Element<'a, Message> + 'a>,
+}
+
 impl Application for CalcApp {
     type Executor = cosmic::executor::Default;
     type Message = Message;
@@ -498,11 +527,31 @@ impl Application for CalcApp {
             }
         };
 
-        let d = |l: &'static str| calc_btn(l, std_bg, std_fg, rad, true);
-        let o = |l: &'static str| calc_btn(l, sug_bg, sug_fg, rad, true);
-        let a = |l: &'static str| calc_btn(l, des_bg, des_fg, rad, true);
-        let dim = |l: &'static str| calc_btn(l, acc_dim_bg, std_fg, rad, false);
-        let eq = || calc_btn("=", sug_bg, sug_fg, rad, true);
+        let ctx = StyleContext {
+            rad,
+            rad_m,
+            pill_acc_bg,
+            pill_acc_fg,
+            pill_std_bg,
+            pill_std_fg,
+            std_bg,
+            std_fg,
+            sug_bg,
+            sug_fg,
+            des_bg,
+            des_fg,
+            hist_fg,
+            hist_dim,
+            disp_bg,
+            disp_fg,
+            border_clr,
+            acc_dim_bg,
+            d: Box::new(move |l: &'static str| calc_btn(l, std_bg, std_fg, rad, true)),
+            o: Box::new(move |l: &'static str| calc_btn(l, sug_bg, sug_fg, rad, true)),
+            a: Box::new(move |l: &'static str| calc_btn(l, des_bg, des_fg, rad, true)),
+            dim: Box::new(move |l: &'static str| calc_btn(l, acc_dim_bg, std_fg, rad, false)),
+            eq: Box::new(move || calc_btn("=", sug_bg, sug_fg, rad, true)),
+        };
 
         let hist_active = self.show_history;
         let (hist_btn_bg, hist_btn_fg) = if hist_active {
@@ -575,56 +624,15 @@ impl Application for CalcApp {
         .into();
 
         let content: Element<'_, Message> = if self.show_history {
-            self.view_history(
-                pill_acc_bg,
-                pill_acc_fg,
-                pill_std_bg,
-                pill_std_fg,
-                hist_fg,
-                hist_dim,
-                rad_m,
-            )
+            self.view_history(&ctx)
         } else {
             match self.mode {
                 CalcMode::Standard | CalcMode::Scientific => {
-                    self.view_standard_sci(disp_bg, disp_fg, rad_m, &d, &o, &a, &eq)
+                    self.view_standard_sci(&ctx)
                 }
-                CalcMode::Programmer => self.view_programmer(
-                    std_fg,
-                    sug_bg,
-                    sug_fg,
-                    des_bg,
-                    des_fg,
-                    disp_bg,
-                    disp_fg,
-                    rad,
-                    rad_m,
-                    pill_acc_bg,
-                    pill_acc_fg,
-                    pill_std_bg,
-                    pill_std_fg,
-                    &d,
-                    &o,
-                    &a,
-                    &dim,
-                ),
-                CalcMode::Rpn => self.view_rpn(
-                    sug_bg, sug_fg, des_bg, des_fg, disp_bg, disp_fg, rad_m, &d, &o, &a,
-                ),
-                CalcMode::Statistics => self.view_statistics(
-                    sug_bg,
-                    sug_fg,
-                    des_bg,
-                    des_fg,
-                    disp_bg,
-                    disp_fg,
-                    rad_m,
-                    pill_std_bg,
-                    pill_std_fg,
-                    &d,
-                    &o,
-                    &a,
-                ),
+                CalcMode::Programmer => self.view_programmer(&ctx),
+                CalcMode::Rpn => self.view_rpn(&ctx),
+                CalcMode::Statistics => self.view_statistics(&ctx),
             }
         };
 
@@ -675,22 +683,26 @@ impl Application for CalcApp {
         };
 
         // ── Shared popup item helpers ─────────────────────────────────────
-        let popup_item_bg = pill_std_bg;
-        let popup_item_fg = pill_std_fg;
+        let popup_item_bg = ctx.pill_std_bg;
+        let popup_item_fg = ctx.pill_std_fg;
+        let ctx_rad_m = ctx.rad_m;
+        let ctx_disp_bg = ctx.disp_bg;
+        let ctx_border_clr = ctx.border_clr;
+
         let popup_row_style = move |_: &cosmic::Theme| cosmic::iced::widget::container::Style {
             background: Some(cosmic::iced::Background::Color(popup_item_bg)),
             text_color: Some(popup_item_fg),
             border: cosmic::iced::Border {
-                radius: rad_m,
+                radius: ctx_rad_m,
                 ..Default::default()
             },
             ..Default::default()
         };
         let popup_panel_style = move |_: &cosmic::Theme| cosmic::iced::widget::container::Style {
-            background: Some(cosmic::iced::Background::Color(disp_bg)),
+            background: Some(cosmic::iced::Background::Color(ctx_disp_bg)),
             border: cosmic::iced::Border {
-                radius: rad_m,
-                color: border_clr,
+                radius: ctx_rad_m,
+                color: ctx_border_clr,
                 width: 1.0,
             },
             ..Default::default()
@@ -1077,14 +1089,16 @@ impl CalcApp {
     #[allow(clippy::too_many_arguments)]
     fn view_history(
         &self,
-        pill_acc_bg: cosmic::iced::Color,
-        pill_acc_fg: cosmic::iced::Color,
-        pill_std_bg: cosmic::iced::Color,
-        pill_std_fg: cosmic::iced::Color,
-        hist_fg: cosmic::iced::Color,
-        hist_dim: cosmic::iced::Color,
-        rad_m: cosmic::iced::border::Radius,
+        ctx: &StyleContext<'_>,
     ) -> Element<'_, Message> {
+        let pill_std_bg = ctx.pill_std_bg;
+        let pill_std_fg = ctx.pill_std_fg;
+        let rad_m = ctx.rad_m;
+        let hist_dim = ctx.hist_dim;
+        let pill_acc_bg = ctx.pill_acc_bg;
+        let pill_acc_fg = ctx.pill_acc_fg;
+        let hist_fg = ctx.hist_fg;
+
         let mut col = column().spacing(8).padding([4, 0]).width(Length::Fill);
         col = col.push(
             button::custom(
@@ -1179,14 +1193,16 @@ impl CalcApp {
     #[allow(clippy::too_many_arguments)]
     fn view_standard_sci<'a: 'b, 'b>(
         &'b self,
-        disp_bg: cosmic::iced::Color,
-        disp_fg: cosmic::iced::Color,
-        rad_m: cosmic::iced::border::Radius,
-        d: &impl Fn(&'static str) -> Element<'a, Message>,
-        o: &impl Fn(&'static str) -> Element<'a, Message>,
-        a: &impl Fn(&'static str) -> Element<'a, Message>,
-        eq: &impl Fn() -> Element<'a, Message>,
+        ctx: &StyleContext<'a>,
     ) -> Element<'a, Message> {
+        let disp_bg = ctx.disp_bg;
+        let disp_fg = ctx.disp_fg;
+        let rad_m = ctx.rad_m;
+        let d = &ctx.d;
+        let o = &ctx.o;
+        let a = &ctx.a;
+        let eq = &ctx.eq;
+
         let font_size: u16 = if self.display.len() > 12 { 28 } else { 42 };
         let display_str: String = self.display.clone();
         let display_area = button::custom(
@@ -1270,24 +1286,26 @@ impl CalcApp {
     #[allow(clippy::too_many_arguments)]
     fn view_programmer<'a: 'b, 'b>(
         &'b self,
-        std_fg: cosmic::iced::Color,
-        sug_bg: cosmic::iced::Color,
-        sug_fg: cosmic::iced::Color,
-        des_bg: cosmic::iced::Color,
-        des_fg: cosmic::iced::Color,
-        disp_bg: cosmic::iced::Color,
-        disp_fg: cosmic::iced::Color,
-        rad: cosmic::iced::border::Radius,
-        rad_m: cosmic::iced::border::Radius,
-        pill_acc_bg: cosmic::iced::Color,
-        pill_acc_fg: cosmic::iced::Color,
-        pill_std_bg: cosmic::iced::Color,
-        pill_std_fg: cosmic::iced::Color,
-        d: &impl Fn(&'static str) -> Element<'a, Message>,
-        o: &impl Fn(&'static str) -> Element<'a, Message>,
-        a: &impl Fn(&'static str) -> Element<'a, Message>,
-        dim: &impl Fn(&'static str) -> Element<'a, Message>,
+        ctx: &StyleContext<'a>,
     ) -> Element<'a, Message> {
+        let std_fg = ctx.std_fg;
+        let sug_bg = ctx.sug_bg;
+        let sug_fg = ctx.sug_fg;
+        let des_bg = ctx.des_bg;
+        let des_fg = ctx.des_fg;
+        let disp_bg = ctx.disp_bg;
+        let disp_fg = ctx.disp_fg;
+        let rad = ctx.rad;
+        let rad_m = ctx.rad_m;
+        let pill_acc_bg = ctx.pill_acc_bg;
+        let pill_acc_fg = ctx.pill_acc_fg;
+        let pill_std_bg = ctx.pill_std_bg;
+        let pill_std_fg = ctx.pill_std_fg;
+        let d = &ctx.d;
+        let o = &ctx.o;
+        let a = &ctx.a;
+        let dim = &ctx.dim;
+
         let base = self.prog_base;
         let dec_val = i64::from_str_radix(&self.display, base.radix()).unwrap_or(0);
         let font_size: u16 = if self.display.len() > 10 { 24 } else { 36 };
@@ -1544,17 +1562,19 @@ impl CalcApp {
     #[allow(clippy::too_many_arguments)]
     fn view_rpn<'a: 'b, 'b>(
         &'b self,
-        sug_bg: cosmic::iced::Color,
-        sug_fg: cosmic::iced::Color,
-        des_bg: cosmic::iced::Color,
-        des_fg: cosmic::iced::Color,
-        disp_bg: cosmic::iced::Color,
-        disp_fg: cosmic::iced::Color,
-        rad_m: cosmic::iced::border::Radius,
-        d: &impl Fn(&'static str) -> Element<'a, Message>,
-        o: &impl Fn(&'static str) -> Element<'a, Message>,
-        a: &impl Fn(&'static str) -> Element<'a, Message>,
+        ctx: &StyleContext<'a>,
     ) -> Element<'a, Message> {
+        let sug_bg = ctx.sug_bg;
+        let sug_fg = ctx.sug_fg;
+        let des_bg = ctx.des_bg;
+        let des_fg = ctx.des_fg;
+        let disp_bg = ctx.disp_bg;
+        let disp_fg = ctx.disp_fg;
+        let rad_m = ctx.rad_m;
+        let d = &ctx.d;
+        let o = &ctx.o;
+        let a = &ctx.a;
+
         let font_size: u16 = if self.display.len() > 12 { 28 } else { 38 };
         let stack_items: Vec<String> = self
             .rpn_stack
@@ -1700,19 +1720,20 @@ impl CalcApp {
     #[allow(clippy::too_many_arguments)]
     fn view_statistics<'a: 'b, 'b>(
         &'b self,
-        sug_bg: cosmic::iced::Color,
-        sug_fg: cosmic::iced::Color,
-        des_bg: cosmic::iced::Color,
-        des_fg: cosmic::iced::Color,
-        disp_bg: cosmic::iced::Color,
-        disp_fg: cosmic::iced::Color,
-        rad_m: cosmic::iced::border::Radius,
-        pill_std_bg: cosmic::iced::Color,
-        pill_std_fg: cosmic::iced::Color,
-        d: &impl Fn(&'static str) -> Element<'a, Message>,
-        _o: &impl Fn(&'static str) -> Element<'a, Message>,
-        a: &impl Fn(&'static str) -> Element<'a, Message>,
+        ctx: &StyleContext<'a>,
     ) -> Element<'a, Message> {
+        let sug_bg = ctx.sug_bg;
+        let sug_fg = ctx.sug_fg;
+        let des_bg = ctx.des_bg;
+        let des_fg = ctx.des_fg;
+        let disp_bg = ctx.disp_bg;
+        let disp_fg = ctx.disp_fg;
+        let rad_m = ctx.rad_m;
+        let pill_std_bg = ctx.pill_std_bg;
+        let pill_std_fg = ctx.pill_std_fg;
+        let d = &ctx.d;
+        let a = &ctx.a;
+
         let n = self.stat_values.len();
         let sum = self.stat_values.iter().sum::<f64>();
         let mean = if n > 0 { sum / n as f64 } else { 0.0 };
